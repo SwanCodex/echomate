@@ -4,7 +4,7 @@ function App() {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/users")
+    fetch("http://localhost:5000/api/leaderboard")
       .then((res) => res.json())
       .then((data) => setUsers(data))
       .catch((err) => console.error(err));
@@ -12,13 +12,12 @@ function App() {
 
   return (
     <div>
-      <h1>EcoMate Users</h1>
+      <h1>🏆 EcoMate Leaderboard</h1>
 
-      {users.map((user) => (
+      {users.map((user, index) => (
         <div key={user._id}>
-          <p>Name: {user.name}</p>
-          <p>Email: {user.email}</p>
-          <p>Points: {user.points}</p>
+          <h2>#{index + 1} {user.name}</h2>
+          <p>🌿 Points: {user.points}</p>
           <hr />
         </div>
       ))}

@@ -3,6 +3,8 @@ const User = require("./models/User");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const Activity = require("./models/Activity");
+const calculateCarbon = require("./utils/carbon");
+const getSuggestions = require("./utils/suggestions");
 require("dotenv").config();
 
 mongoose.connect(process.env.MONGO_URI)
@@ -52,7 +54,10 @@ app.get("/api/users", async (req, res) => {
 
 app.post("/api/activity", async (req, res) => {
   try {
-    const { userId, type, action, carbon } = req.body;
+    const suggestionData = getSuggestions(type, action);
+    const { userId, type, action } = req.body;
+
+    const carbon = calculateCarbon(type, action);
 
     const activity = new Activity({
       userId,
@@ -63,7 +68,30 @@ app.post("/api/activity", async (req, res) => {
 
     await activity.save();
 
-    res.json({ message: "Activity added", activity });
+    // ✅ Update user points (simple logic)
+    const pointsEarned = carbon === 0 ? 10 : 5;
+
+    await User.findByIdAndUpdate(userId, {
+      $inc: { points: pointsEarned }
+    });
+
+    res.json({
+      message: "Activity added",
+      carbon,
+      pointsEarned,
+      suggestion: suggestionData.suggestion,
+      reason: suggestionData.reason
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/leaderboard", async (req, res) => {
+  try {
+    const users = await User.find().sort({ points: -1 }); // highest first
+    res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
